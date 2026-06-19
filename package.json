@@ -1,0 +1,13 @@
+{
+  "name": "ecommerce-micro-poc",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @ecommerce/gateway",
+    "verify:services": "node scripts/verify-services.js",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  }
+}
