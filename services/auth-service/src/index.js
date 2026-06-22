@@ -1,9 +1,22 @@
 const express = require('express');
+const { connectRedis, connectKafka } = require('../../shared/src');
+
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const serviceName = 'auth-service';
 
 app.use(express.json());
+
+let redisClient;
+let producer;
+let consumer;
+
+async function initInfrastructure() {
+  redisClient = await connectRedis(serviceName);
+  const kafka = await connectKafka(serviceName, `${serviceName}-group`);
+  producer = kafka.producer;
+  consumer = kafka.consumer;
+}
 
 app.use((req, res, next) => {
   console.log(`[${serviceName}] ${req.method} ${req.originalUrl}`);
@@ -14,6 +27,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     service: serviceName,
+    redis: redisClient?.isReady ? 'connected' : 'disconnected',
+    kafka: producer && consumer ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   });
 });
@@ -42,6 +57,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`${serviceName} running on port ${port}`);
-});
+(async () => {
+  try {
+    await initInfrastructure();
+  } catch (error) {
+    console.warn(`[${serviceName}] infrastructure init skipped`, error.message);
+  } finally {
+    app.listen(port, () => {
+      console.log(`${serviceName} running on port ${port}`);
+    });
+  }
+})();
