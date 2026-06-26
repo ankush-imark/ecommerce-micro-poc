@@ -1,5 +1,5 @@
 const express = require('express');
-const { connectRedis, connectKafka } = require('../../shared/src');
+const { connectRedis, connectKafka, prisma } = require('../../shared/src');
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -10,8 +10,11 @@ app.use(express.json());
 let redisClient;
 let producer;
 let consumer;
+let prismaClient;
 
 async function initInfrastructure() {
+  await prisma.$connect();
+  prismaClient = prisma;
   redisClient = await connectRedis(serviceName);
   const kafka = await connectKafka(serviceName, `${serviceName}-group`);
   producer = kafka.producer;
@@ -27,8 +30,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     service: serviceName,
-    redis: redisClient?.isReady ? 'connected' : 'disconnected',
+    redis: redisClient?.isOpen ? 'connected' : 'disconnected',
     kafka: producer && consumer ? 'connected' : 'disconnected',
+    prisma: prismaClient ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   });
 });

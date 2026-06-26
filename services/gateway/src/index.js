@@ -1,7 +1,11 @@
 const express = require('express');
+const { prisma } = require('../../shared/src');
+
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const serviceName = 'gateway';
+
+let prismaClient;
 
 app.use(express.json());
 
@@ -14,6 +18,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     service: serviceName,
+    prisma: prismaClient ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   });
 });
@@ -42,6 +47,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`${serviceName} running on port ${port}`);
-});
+(async () => {
+  try {
+    await prisma.$connect();
+    prismaClient = prisma;
+  } catch (error) {
+    console.warn(`[${serviceName}] database init skipped`, error.message);
+  } finally {
+    app.listen(port, () => {
+      console.log(`${serviceName} running on port ${port}`);
+    });
+  }
+})();

@@ -9,5 +9,8 @@
     "verify:services": "node scripts/verify-services.js",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
   }
 }

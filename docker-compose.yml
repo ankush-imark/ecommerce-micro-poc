@@ -69,6 +69,8 @@ services:
     environment:
       PORT: ${GATEWAY_PORT:-3000}
       NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:[REDACTED]@postgres:5432/ecommerce}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:3001}
       CART_SERVICE_URL: ${CART_SERVICE_URL:-http://cart-service:3002}
       ORDER_SERVICE_URL: ${ORDER_SERVICE_URL:-http://order-service:3003}
@@ -90,6 +92,9 @@ services:
     container_name: ecommerce-auth-service
     ports:
       - "${AUTH_SERVICE_PORT:-3001}:3001"
+    volumes:
+      - ./services/auth-service:/app/services/auth-service
+      - ./services/shared:/app/services/shared
     environment:
       PORT: ${AUTH_SERVICE_PORT:-3001}
       NODE_ENV: ${NODE_ENV:-development}
@@ -128,9 +133,9 @@ services:
     ports:
       - "${ORDER_SERVICE_PORT:-3003}:3003"
     environment:
-      PORT: ${ORDER_SERVICE_PORT:-3003}
+      PORT: ${PORT:-3003}
       NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/ecommerce}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:[REDACTED]@postgres:5432/ecommerce}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
     depends_on:
@@ -156,8 +161,10 @@ services:
       PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-https://api.example.com}
       PAYMENT_API_KEY: ${PAYMENT_API_KEY:-replace-with-real-key}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   inventory-service:
     build:
@@ -172,8 +179,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:[REDACTED]@postgres:5432/ecommerce}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   notification-service:
     build:
@@ -185,12 +194,16 @@ services:
     environment:
       PORT: ${NOTIFICATION_SERVICE_PORT:-3006}
       NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:[REDACTED]@postgres:5432/ecommerce}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-replace-with-user}
       SMTP_PASS: ${SMTP_PASS:-replace-with-password}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
