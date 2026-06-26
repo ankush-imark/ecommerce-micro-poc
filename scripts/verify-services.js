@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const services = [
   { name: 'gateway', port: 3000 },
